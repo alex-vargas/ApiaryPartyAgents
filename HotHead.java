@@ -50,10 +50,13 @@ public class HotHead extends Attacker {
 	 * @return your action
 	 */
 	public AttackerAction makeAction() {
+        if(availableNodes.size() < 1 || (budget < Parameters.ATTACK_RATE && budget < Parameters.SUPERATTACK_RATE))
+            return new AttackerAction(AttackerActionType.INVALID,0);
 		AttackerActionType type = AttackerActionType.ATTACK;
 		if(budget <= (Parameters.SUPERATTACK_RATE * 2 + 1) && budget >= Parameters.SUPERATTACK_RATE)
 			type = AttackerActionType.SUPERATTACK;
-		int nodeId = availableNodes.get(r.nextInt(availableNodes.size())).getNodeID();
+		int randNumber = r.nextInt(availableNodes.size());
+		int nodeId = availableNodes.get(randNumber).getNodeID();
 		return new AttackerAction(type, nodeId);
 	}
 

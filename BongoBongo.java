@@ -54,6 +54,8 @@ public class BongoBongo extends Attacker {
 	 * @return your action
 	 */
 	public AttackerAction makeAction() {
+        if(availableNodes.size() < 1 || (budget < Parameters.ATTACK_RATE && budget < Parameters.SUPERATTACK_RATE))
+            return new AttackerAction(AttackerActionType.INVALID,0);
 		AttackerActionType type = AttackerActionType.ATTACK;
 		Node mNodeToAttack  = null;
 		
