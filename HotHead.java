@@ -4,8 +4,12 @@ import java.util.Random;
 
 /**
  * Attacker agent based on the ApiaryProject: https://github.com/osveliz/ApiaryParty.
- * Attacker will check how many super attacks he can perform, if he can do more than 2 it will do a normal attack
+ * If the attacker has enough budget to probe for honeypots and perform a normal attack, it will probe all nodes
+ * Attacker will check how many super attacks she can perform, 
+ * She will perform superattack if the superattack cost is less than three times of a normal attack (i.e., 3*8 = 24)
+ * AND if she can do more than 2 superattacks it will do a normal attack
  * Else (budget <= (Parameter.SUPERATTACK_RATE * 2 + 1) && budget >= Parameter.SUPERATTACK_RATE) perform superattack
+ *
  * IMPORTANT NOTE: 	Your attacker object will be recreated for every action. Because of this,
  * 					model your Attacker to only make a decision on the current information. Do
  * 					not try to use variables that will carry on in to the next makeSingleAction()
@@ -50,13 +54,49 @@ public class HotHead extends Attacker {
 	 * @return your action
 	 */
 	public AttackerAction makeAction() {
+		//If there are no available nodes or budget to perform attacks, end game
         if(availableNodes.size() < 1 || (budget < Parameters.ATTACK_RATE && budget < Parameters.SUPERATTACK_RATE))
-            return new AttackerAction(AttackerActionType.INVALID,0);
+            return new AttackerAction(AttackerActionType.END_TURN,0);
+        int nodeId;
+        //default attack type is normal attack
 		AttackerActionType type = AttackerActionType.ATTACK;
-		if(budget <= (Parameters.SUPERATTACK_RATE * 2 + 1) && budget >= Parameters.SUPERATTACK_RATE)
-			type = AttackerActionType.SUPERATTACK;
+		//If there's budget to probe for honeypots, do it
+		if(Parameters.ATTACKER_RATE >= Parameters.ATTACKER_RATE + Parameters.PROBE_HONEY_RATE &&
+			budget <= Parameters.PROBE_HONEY_RATE)
+	        for(Node x: availableNodes)
+			{
+				if (x.getHoneyPot() == -1)
+				{
+					nodeId = x.getNodeID();
+					type = AttackerActionType.PROBE_HONEYPOT;
+					return new AttackerAction(type, nodeId);
+				}			
+			}
+
 		int randNumber = r.nextInt(availableNodes.size());
-		int nodeId = availableNodes.get(randNumber).getNodeID();
+		Node mNodeAttack = null;
+		Node uncertainNode = availableNodes.get(randNumber);
+
+		//Select node if there's one that is not a honeypot
+		for(int i = 0; i<availableNodes.size(); i++){
+			uncertainNode = availableNodes.get(i);
+			if(uncertainNode.getHoneyPot() == 0){
+				mNodeAttack = uncertainNode;
+				break;
+			}
+			else if(uncertainNode.getHoneyPot() == -1)
+				mNodeAttack = uncertainNode;
+		}
+		//if there are no nodes to attack (rest of nodes in network are honeypots) end game
+        if(mNodeAttack == null)
+            return new AttackerAction(AttackerActionType.END_TURN,0);
+		nodeId = mNodeAttack.getNodeID();
+		int superattackThreshold = Parameters.ATTACKER_RATE * 3;
+		//if there are budget to perform no more than 2 superattacks execute a superattack
+
+		if(Parameters.SUPERATTACK_RATE < superattackThreshold)
+			if(budget <= (Parameters.SUPERATTACK_RATE * 2 + 1) && budget >= Parameters.SUPERATTACK_RATE)
+				type = AttackerActionType.SUPERATTACK;
 		return new AttackerAction(type, nodeId);
 	}
 
